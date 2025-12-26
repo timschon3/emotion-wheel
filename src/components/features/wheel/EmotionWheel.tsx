@@ -91,7 +91,7 @@ export const EmotionWheel = () => {
 
     return (
         <div className="relative flex flex-col items-center justify-center p-4">
-            <div className="relative w-full max-w-[600px] aspect-square">
+            <div className="relative w-full max-w-[1000px] aspect-square">
                 <svg
                     viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}
                     className="w-full h-full drop-shadow-2xl overflow-visible"
@@ -147,7 +147,7 @@ export const EmotionWheel = () => {
                                                 textAnchor="middle"
                                                 dominantBaseline="middle"
                                                 fill="black"
-                                                fontSize="12"
+                                                fontSize="24"
                                                 fontWeight="bold"
                                                 style={{ pointerEvents: "none" }} // Ensure click goes to path
                                                 transform={`rotate(${labelPos.rotation - (labelPos.rotation > 90 && labelPos.rotation < 270 ? 180 : 0) === labelPos.rotation ? labelPos.rotation - 90 : 0}, ${labelPos.x}, ${labelPos.y})`} // Simple rotation fix not applied here, relying on group or raw math
@@ -210,7 +210,7 @@ export const EmotionWheel = () => {
                                                 textAnchor="middle"
                                                 dominantBaseline="middle"
                                                 fill="black" // Black text on vibrant colors
-                                                fontSize="12"
+                                                fontSize="16"
                                                 fontWeight="600"
                                                 className="pointer-events-none select-none"
                                             >
