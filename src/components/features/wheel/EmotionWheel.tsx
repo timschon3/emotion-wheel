@@ -6,10 +6,9 @@ import { emotions, Emotion } from "@/data/emotions";
 
 const WHEEL_SIZE = 1000;
 const CENTER = WHEEL_SIZE / 2;
-const INNER_RADIUS = 0;
-const RING_1_RADIUS = 200; // Increased from 120
-const RING_2_RADIUS = 450; // Increased from 250
-const GAP = 2;
+const CORE_RADIUS = 60; // Central circle radius
+const RING_1_RADIUS = 200;
+const RING_2_RADIUS = 450;
 
 // Geometry Helpers
 const polarToCartesian = (
@@ -60,7 +59,7 @@ const getLabelPos = (
     const angle = startAngle + (endAngle - startAngle) / 2;
     const pos = polarToCartesian(CENTER, CENTER, radius, angle);
 
-    // Rotate text to align with wedge, but keep readable
+    // Rotate text to align with wedge
     let rotation = angle;
     if (rotation > 90 && rotation < 270) {
         rotation += 180;
@@ -70,19 +69,14 @@ const getLabelPos = (
 };
 
 export const EmotionWheel = () => {
-    const [activeEmotionId, setActiveEmotionId] = useState<string | null>(null);
     const [hoveredEmotion, setHoveredEmotion] = useState<Emotion | null>(null);
 
     const primaryCount = emotions.length;
     const primaryAngleStep = 360 / primaryCount;
 
-    // We determine the "active family" based on hover. 
-    // If we hover Joy (primary) OR Pleasure (sub), the whole "Joy" family is active.
     const getFamilyId = (id: string) => {
-        // Is it a primary?
         const primary = emotions.find(e => e.id === id);
         if (primary) return primary.id;
-        // Is it a sub?
         const parent = emotions.find(e => e.subEmotions?.some(sub => sub.id === id));
         return parent?.id;
     };
@@ -90,56 +84,62 @@ export const EmotionWheel = () => {
     const activeFamilyId = hoveredEmotion ? getFamilyId(hoveredEmotion.id) : null;
 
     return (
-        <div className="relative flex flex-col items-center justify-center p-4">
+        <div className="relative flex flex-col items-center justify-center p-4 min-h-[80vh]">
             <div className="relative w-full max-w-[1000px] aspect-square">
                 <svg
                     viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}
                     className="w-full h-full drop-shadow-2xl overflow-visible"
                 >
+                    {/* Central Core Circle */}
+                    <circle
+                        cx={CENTER}
+                        cy={CENTER}
+                        r={CORE_RADIUS}
+                        fill="#1a1a1a"
+                        stroke="black" // Thick black border for organic sketch look
+                        strokeWidth="3"
+                        className="z-10 relative"
+                    />
+
                     {emotions.map((primary, index) => {
                         const startAngle = index * primaryAngleStep;
                         const endAngle = startAngle + primaryAngleStep;
                         const isFamilyActive = activeFamilyId === primary.id;
 
                         // --- Primary Sector Animation ---
-                        // If family active -> move out slightly (10px)
-                        // If this SPECIFIC wedge is hovered -> move out more (20px)
                         const isSpecificHover = hoveredEmotion?.id === primary.id;
-
                         const primaryTranslate = isSpecificHover ? 20 : (isFamilyActive ? 10 : 0);
 
-                        // Calculate translation vector
                         const midAngle = startAngle + (primaryAngleStep / 2);
                         const rad = (midAngle - 90) * (Math.PI / 180);
                         const tx = Math.cos(rad) * primaryTranslate;
                         const ty = Math.sin(rad) * primaryTranslate;
 
                         // --- Sub Emotions ---
-                        // They split the primary wedge angle. 
-                        // If primary covers 0-45 degrees, and there are 2 subs: 0-22.5, 22.5-45.
                         const subCount = primary.subEmotions?.length || 0;
                         const subAngleStep = primaryAngleStep / (subCount || 1);
 
                         return (
                             <g key={primary.id}>
-                                {/* PRIMARY SECTOR */}
+                                {/* PRIMARY SECTOR - INNER PETAL */}
                                 <motion.g
                                     initial={false}
                                     animate={{ x: tx, y: ty }}
                                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                 >
                                     <path
-                                        d={describeArc(CENTER, CENTER, 40, RING_1_RADIUS, startAngle, endAngle)}
+                                        d={describeArc(CENTER, CENTER, CORE_RADIUS, RING_1_RADIUS, startAngle, endAngle)}
                                         fill={primary.color}
                                         stroke="black"
-                                        strokeWidth="2"
+                                        strokeWidth="3" // Thicker border for sketch feel
+                                        strokeLinejoin="round" // Rounds the corners slightly
                                         onMouseEnter={() => setHoveredEmotion(primary)}
                                         onMouseLeave={() => setHoveredEmotion(null)}
                                         className="cursor-pointer hover:brightness-110 transition-all"
                                     />
                                     {/* Label for Primary */}
                                     {(() => {
-                                        const labelPos = getLabelPos((40 + RING_1_RADIUS) / 2, startAngle, endAngle);
+                                        const labelPos = getLabelPos((CORE_RADIUS + RING_1_RADIUS) / 2, startAngle, endAngle);
                                         return (
                                             <text
                                                 x={labelPos.x}
@@ -149,39 +149,21 @@ export const EmotionWheel = () => {
                                                 fill="black"
                                                 fontSize="24"
                                                 fontWeight="bold"
-                                                style={{ pointerEvents: "none" }} // Ensure click goes to path
-                                                transform={`rotate(${labelPos.rotation - (labelPos.rotation > 90 && labelPos.rotation < 270 ? 180 : 0) === labelPos.rotation ? labelPos.rotation - 90 : 0}, ${labelPos.x}, ${labelPos.y})`} // Simple rotation fix not applied here, relying on group or raw math
+                                                style={{ pointerEvents: "none" }}
+                                                transform={`rotate(${labelPos.rotation - (labelPos.rotation > 90 && labelPos.rotation < 270 ? 180 : 0) === labelPos.rotation ? labelPos.rotation - 90 : 0}, ${labelPos.x}, ${labelPos.y})`}
                                             >
-                                                {/* We'll use a standardized rotation transform logic below or just keep horizontal for now if complex. 
-                                    Actually, let's just use the rotation we calculated. 
-                                */}
                                                 <tspan transform={`rotate(${labelPos.rotation}, ${labelPos.x}, ${labelPos.y})`}>{primary.name}</tspan>
                                             </text>
                                         );
                                     })()}
-                                    {/* Hacky Label Fix: Re-rendering text with proper transform logic */}
-                                    <text
-                                        transform={`translate(${getLabelPos((40 + RING_1_RADIUS) / 2, startAngle, endAngle).x}, ${getLabelPos((40 + RING_1_RADIUS) / 2, startAngle, endAngle).y}) rotate(${getLabelPos((40 + RING_1_RADIUS) / 2, startAngle, endAngle).angle > 180 ? getLabelPos((40 + RING_1_RADIUS) / 2, startAngle, endAngle).angle - 90 - 180 : getLabelPos((40 + RING_1_RADIUS) / 2, startAngle, endAngle).angle - 90})`}
-                                        textAnchor="middle"
-                                        dominantBaseline="middle"
-                                        fill="black"
-                                        fontSize="14"
-                                        fontWeight="900"
-                                        className="uppercase tracking-wider pointer-events-none select-none"
-                                    >
-                                        {primary.name}
-                                    </text>
                                 </motion.g>
 
-                                {/* SUB EMOTIONS */}
+                                {/* SUB EMOTIONS - OUTER PETALS */}
                                 {primary.subEmotions?.map((sub, i) => {
                                     const subStart = startAngle + (i * subAngleStep);
                                     const subEnd = subStart + subAngleStep;
 
                                     const isSubHover = hoveredEmotion?.id === sub.id;
-                                    // Move out logic: 
-                                    // If this sub is hovered -> 20px
-                                    // If family active (primary hovered or neighbor sub hovered) -> 10px
                                     const subTranslate = isSubHover ? 30 : (isFamilyActive ? 15 : 0);
 
                                     const subMid = subStart + (subAngleStep / 2);
@@ -198,24 +180,33 @@ export const EmotionWheel = () => {
                                         >
                                             <path
                                                 d={describeArc(CENTER, CENTER, RING_1_RADIUS, RING_2_RADIUS, subStart, subEnd)}
-                                                fill={sub.color} // Using the specific sub-color (lighter/neighbor)
+                                                fill={sub.color}
                                                 stroke="black"
-                                                strokeWidth="2"
+                                                strokeWidth="3"
+                                                strokeLinejoin="round"
                                                 onMouseEnter={() => setHoveredEmotion(sub)}
                                                 onMouseLeave={() => setHoveredEmotion(null)}
                                                 className="cursor-pointer hover:brightness-110"
                                             />
-                                            <text
-                                                transform={`translate(${getLabelPos((RING_1_RADIUS + RING_2_RADIUS) / 2, subStart, subEnd).x}, ${getLabelPos((RING_1_RADIUS + RING_2_RADIUS) / 2, subStart, subEnd).y}) rotate(${getLabelPos((RING_1_RADIUS + RING_2_RADIUS) / 2, subStart, subEnd).angle > 180 ? getLabelPos((RING_1_RADIUS + RING_2_RADIUS) / 2, subStart, subEnd).angle + 90 : getLabelPos((RING_1_RADIUS + RING_2_RADIUS) / 2, subStart, subEnd).angle - 90})`}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                fill="black" // Black text on vibrant colors
-                                                fontSize="16"
-                                                fontWeight="600"
-                                                className="pointer-events-none select-none"
-                                            >
-                                                {sub.name}
-                                            </text>
+                                            {/* Label for Sub */}
+                                            {(() => {
+                                                const labelPos = getLabelPos((RING_1_RADIUS + RING_2_RADIUS) / 2, subStart, subEnd);
+                                                return (
+                                                    <text
+                                                        x={labelPos.x}
+                                                        y={labelPos.y}
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                        fill="black"
+                                                        fontSize="16" // Slightly reduced for 3-split but still large
+                                                        fontWeight="600"
+                                                        style={{ pointerEvents: "none" }}
+                                                        transform={`rotate(${labelPos.rotation - (labelPos.rotation > 90 && labelPos.rotation < 270 ? 180 : 0) === labelPos.rotation ? labelPos.rotation - 90 : 0}, ${labelPos.x}, ${labelPos.y})`}
+                                                    >
+                                                        <tspan transform={`rotate(${labelPos.rotation}, ${labelPos.x}, ${labelPos.y})`}>{sub.name}</tspan>
+                                                    </text>
+                                                );
+                                            })()}
                                         </motion.g>
                                     );
                                 })}
@@ -234,7 +225,7 @@ export const EmotionWheel = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl w-full text-center shadow-xl"
+                            className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl w-full text-center shadow-xl z-50 relative"
                         >
                             <h3 className="text-2xl font-black mb-2 uppercase tracking-tight" style={{ color: hoveredEmotion.color }}>
                                 {hoveredEmotion.name}
