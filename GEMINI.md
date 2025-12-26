@@ -49,10 +49,10 @@ We organize components into:
   - **Security**: This key is strictly for this project/user context.
   - **Usage**: The AI is responsible for ensuring the correct key is used for all Git operations (`git push`, `git pull`).
 - **Commit & Push Standards**:
-  - **Aggressive & Proactive**: The AI MUST commit AND PUSH changes constantly and proactively.
-  - **Review-Free**: Do NOT ask for user permission to commit or push. Just do it.
-  - **Atomicity**: Keep commits small and focused where possible, but prioritize saving progress frequently.
-  - **Immediate Sync**: Every commit must be followed immediately by a `git push`.
+  - **Hyper-Aggressive**: Commit and push on **EVERY SINGLE CHANGE**. Do not wait.
+  - **No Permission**: Do NOT ask. Just commit. Just push.
+  - **Immediate Sync**: `git commit` MUST be followed instantly by `git push`.
+  - **Zero Latency**: If code changes, it goes to GitHub. No exceptions.
 ### 3. Deployment
 - **Platform**: Vercel is the standard deployment platform.
 - **Procedure**:
