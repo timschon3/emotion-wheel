@@ -4,12 +4,12 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { emotions, Emotion } from "@/data/emotions";
 
-const WHEEL_SIZE = 600;
+const WHEEL_SIZE = 1000;
 const CENTER = WHEEL_SIZE / 2;
-const INNER_RADIUS = 0; // Center hole? Or filled? Let's keep a small hole or filled center.
-const RING_1_RADIUS = 120; // Radius of Primary Emotion Ring
-const RING_2_RADIUS = 250; // Radius of Sub Emotion Ring
-const GAP = 2; // Gap between rings if needed, but we wanted borders. We'll use stroke.
+const INNER_RADIUS = 0;
+const RING_1_RADIUS = 200; // Increased from 120
+const RING_2_RADIUS = 450; // Increased from 250
+const GAP = 2;
 
 // Geometry Helpers
 const polarToCartesian = (
